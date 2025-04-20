@@ -5,22 +5,18 @@ function node(type, value) {
 }
 
 function parseLiteral(statement) {
-  if (statement.startsWith(";") || statement.startsWith("\x00")) {
-    return [];
-  }
-
   if (statement.startsWith("TRUE")) {
-    return node("BOOLEAN", true);
+    return true;
   }
 
   if (statement.startsWith("FALSE")) {
-    return node("BOOLEAN", false);
+    return false;
   }
 
   let n;
 
   if ((n = statement.match(/^-?\d+/))) {
-    return node("INTEGER", Number(n));
+    return Number(n);
   }
 }
 
@@ -50,7 +46,8 @@ function run(ast) {
   switch (ast.type) {
     case "SELECT":
       return {
-        rows: [ast.value.map((node) => node.value)],
+        rows: [ast.value],
+        column_names: [],
       };
   }
 }
