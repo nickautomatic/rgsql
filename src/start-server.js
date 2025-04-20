@@ -25,6 +25,14 @@ function parseLiteral(statement) {
 }
 
 function parseList(statement) {
+  if (statement === "\x00") {
+    return [];
+  }
+
+  if (!statement.endsWith(";\x00")) {
+    throw new Error("Unexpected characters after statement");
+  }
+
   return statement
     .split(",")
     .map((literal) => parseLiteral(literal.trimStart()));
@@ -38,6 +46,16 @@ function parse(statement) {
   throw new Error("Unexpected statement");
 }
 
+function run(ast) {
+  switch (ast.type) {
+    case "SELECT":
+      return {
+        status: "ok",
+        rows: [ast.value.map((node) => node.value)],
+      };
+  }
+}
+
 const server = net.createServer((socket) => {
   let message = "";
 
@@ -45,11 +63,22 @@ const server = net.createServer((socket) => {
     message += data;
 
     if (message.endsWith("\0")) {
-      const ast = parse(message);
-      console.log(ast);
+      try {
+        const ast = parse(message);
+        const response = run(ast);
+
+        socket.write(`${JSON.stringify(response)}\0`);
+      } catch (error) {
+        const response = {
+          status: "error",
+          error_type: "parsing_error",
+          error_message: error,
+        };
+
+        socket.write(`${JSON.stringify(response)}\0`);
+      }
 
       message = "";
-      socket.write("Hello\0");
     }
   });
 });
