@@ -50,7 +50,6 @@ function run(ast) {
   switch (ast.type) {
     case "SELECT":
       return {
-        status: "ok",
         rows: [ast.value.map((node) => node.value)],
       };
   }
@@ -58,6 +57,10 @@ function run(ast) {
 
 const server = net.createServer((socket) => {
   let message = "";
+
+  function send(response) {
+    socket.write(`${JSON.stringify(response)}\0`);
+  }
 
   socket.on("data", (data) => {
     message += data;
@@ -67,15 +70,16 @@ const server = net.createServer((socket) => {
         const ast = parse(message);
         const response = run(ast);
 
-        socket.write(`${JSON.stringify(response)}\0`);
+        send({
+          status: "ok",
+          ...response,
+        });
       } catch (error) {
-        const response = {
+        send({
           status: "error",
           error_type: "parsing_error",
           error_message: error,
-        };
-
-        socket.write(`${JSON.stringify(response)}\0`);
+        });
       }
 
       message = "";
