@@ -1,42 +1,61 @@
 import net from "node:net";
 
+class Statement extends String {
+  constructor(sql) {
+    super(sql);
+    this.remaining = sql;
+  }
+
+  consume(pattern) {
+    const match = this.remaining.match(pattern);
+
+    if (match) {
+      this.remaining = this.remaining.slice(match[0].length).trimStart();
+      return match[0];
+    }
+
+    return null;
+  }
+}
+
 function node(type, value) {
   return { type, value };
 }
 
 function parseLiteral(statement) {
-  if (statement.startsWith("TRUE")) {
+  if (statement.consume(/^TRUE/)) {
     return true;
   }
 
-  if (statement.startsWith("FALSE")) {
+  if (statement.consume(/^FALSE/)) {
     return false;
   }
 
-  let n;
+  const n = statement.consume(/^-?\d+/);
 
-  if ((n = statement.match(/^-?\d+/))) {
+  if (n !== null) {
     return Number(n);
   }
+
+  return null;
 }
 
 function parseList(statement) {
-  if (statement === "\x00") {
-    return [];
-  }
+  const next = parseLiteral(statement);
 
+  if (next === null) return [];
+
+  statement.consume(/^,/);
+  return [next, ...parseList(statement)];
+}
+
+function parse(statement) {
   if (!statement.endsWith(";\x00")) {
     throw new Error("Unexpected characters after statement");
   }
 
-  return statement
-    .split(",")
-    .map((literal) => parseLiteral(literal.trimStart()));
-}
-
-function parse(statement) {
-  if (statement.startsWith("SELECT")) {
-    return node("SELECT", parseList(statement.slice(7)));
+  if (statement.consume("SELECT")) {
+    return node("SELECT", parseList(statement));
   }
 
   throw new Error("Unexpected statement");
@@ -64,7 +83,7 @@ const server = net.createServer((socket) => {
 
     if (message.endsWith("\0")) {
       try {
-        const ast = parse(message);
+        const ast = parse(new Statement(message));
         const response = run(ast);
 
         send({
