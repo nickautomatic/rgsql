@@ -1,8 +1,7 @@
 import net from "node:net";
 
-class Statement extends String {
+class Statement {
   constructor(sql) {
-    super(sql);
     this.remaining = sql;
   }
 
@@ -16,6 +15,10 @@ class Statement extends String {
     }
 
     return null;
+  }
+
+  endsWith(str) {
+    return this.remaining.endsWith(str);
   }
 }
 
