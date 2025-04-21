@@ -7,7 +7,8 @@ class Statement extends String {
   }
 
   consume(pattern) {
-    const match = this.remaining.match(pattern);
+    const regex = new RegExp(`^${pattern.source}`);
+    const match = this.remaining.match(regex);
 
     if (match) {
       this.remaining = this.remaining.slice(match[0].length).trimStart();
@@ -23,15 +24,15 @@ function node(type, value) {
 }
 
 function parseLiteral(statement) {
-  if (statement.consume(/^TRUE/)) {
+  if (statement.consume(/TRUE/)) {
     return true;
   }
 
-  if (statement.consume(/^FALSE/)) {
+  if (statement.consume(/FALSE/)) {
     return false;
   }
 
-  const n = statement.consume(/^-?\d+/);
+  const n = statement.consume(/-?\d+/);
 
   if (n !== null) {
     return Number(n);
@@ -54,7 +55,7 @@ function parse(statement) {
     throw new Error("Unexpected characters after statement");
   }
 
-  if (statement.consume("SELECT")) {
+  if (statement.consume(/SELECT/)) {
     return node("SELECT", parseList(statement));
   }
 
