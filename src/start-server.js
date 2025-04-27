@@ -41,6 +41,20 @@ function parseLiteral(statement) {
     return node("INTEGER", Number(n));
   }
 
+  if (statement.consume(/,/)) {
+    return node("SEPARATOR");
+  }
+
+  if (statement.consume(/AS/)) {
+    return node("AS");
+  }
+
+  const str = statement.consume(/[a-zA-Z\d_]+/);
+
+  if (str) {
+    return node("STRING", str);
+  }
+
   return null;
 }
 
@@ -49,7 +63,7 @@ function parseList(statement) {
 
   if (next === null) return [];
 
-  statement.consume(/^,/);
+  // statement.consume(/^,/);
   return [next, ...parseList(statement)];
 }
 
@@ -87,6 +101,7 @@ const server = net.createServer((socket) => {
     if (message.endsWith("\0")) {
       try {
         const ast = parse(new Statement(message));
+        console.log(ast);
         const response = run(ast);
 
         send({
