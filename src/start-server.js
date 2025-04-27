@@ -53,6 +53,10 @@ function parseColumn(statement) {
 
   if (next === null) return [];
 
+  if (next.type === "ALIAS" && next.value.match(/^\d/)) {
+    throw new Error("Column names cannot start with a number");
+  }
+
   return [next, ...parseColumn(statement)];
 }
 
