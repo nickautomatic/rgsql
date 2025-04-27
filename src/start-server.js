@@ -45,36 +45,30 @@ function parseLiteral(statement) {
     return node("SEPARATOR");
   }
 
-  if (statement.consume(/AS/)) {
-    return node("AS");
-  }
+  const alias = statement.consume(/AS [a-zA-Z\d_]+/);
 
-  const str = statement.consume(/[a-zA-Z\d_]+/);
-
-  if (str) {
-    return node("STRING", str);
+  if (alias) {
+    return node("ALIAS", alias.slice(3));
   }
 
   return null;
 }
 
 function parseColumn(statement) {
-  const column = statement.consume(/[^;,]+/);
+  const next = parseLiteral(statement);
 
-  if (column) {
-    return node("COLUMN", column);
-  }
+  if (next === null || next.type === "SEPARATOR") return [];
 
-  return null;
+  return [next, ...parseColumn(statement)];
 }
 
 function parseList(statement) {
   const next = parseColumn(statement);
 
-  if (next === null) return [];
+  if (next.length === 0) return [];
 
   statement.consume(/^,/);
-  return [next, ...parseList(statement)];
+  return [node("COLUMN", next), ...parseList(statement)];
 }
 
 function parse(statement) {
@@ -89,12 +83,17 @@ function parse(statement) {
   throw new Error("Unexpected statement");
 }
 
-function run(ast) {
-  switch (ast.type) {
-    case "SELECT":
+function run({ type, value }) {
+  switch (type) {
+    case "SELECT": {
+      const rows = [value.map((column) => column.value[0].value)];
+      const column_names = value.map((column) => column.value[1]?.value);
+
       return {
-        rows: [ast.value.map((node) => node.value)],
+        rows,
+        column_names,
       };
+    }
   }
 }
 
@@ -111,6 +110,7 @@ const server = net.createServer((socket) => {
     if (message.endsWith("\0")) {
       try {
         const ast = parse(new Statement(message));
+        // console.log(ast);
         const response = run(ast);
 
         send({
