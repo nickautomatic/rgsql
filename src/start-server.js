@@ -58,12 +58,22 @@ function parseLiteral(statement) {
   return null;
 }
 
+function parseColumn(statement) {
+  const column = statement.consume(/[^;,]+/);
+
+  if (column) {
+    return node("COLUMN", column);
+  }
+
+  return null;
+}
+
 function parseList(statement) {
-  const next = parseLiteral(statement);
+  const next = parseColumn(statement);
 
   if (next === null) return [];
 
-  // statement.consume(/^,/);
+  statement.consume(/^,/);
   return [next, ...parseList(statement)];
 }
 
@@ -101,7 +111,6 @@ const server = net.createServer((socket) => {
     if (message.endsWith("\0")) {
       try {
         const ast = parse(new Statement(message));
-        console.log(ast);
         const response = run(ast);
 
         send({
