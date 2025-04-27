@@ -112,7 +112,7 @@ const server = net.createServer((socket) => {
         send({
           status: "error",
           error_type: "parsing_error",
-          error_message: error,
+          error_message: error.toString(),
         });
       }
 
