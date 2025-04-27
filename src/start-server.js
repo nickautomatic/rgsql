@@ -36,17 +36,11 @@ function parseLiteral(statement) {
   }
 
   const n = statement.consume(/-?\d+/);
-
   if (n !== null) {
     return node("INTEGER", Number(n));
   }
 
-  if (statement.consume(/,/)) {
-    return node("SEPARATOR");
-  }
-
   const alias = statement.consume(/AS [a-zA-Z\d_]+/);
-
   if (alias) {
     return node("ALIAS", alias.slice(3));
   }
@@ -57,7 +51,7 @@ function parseLiteral(statement) {
 function parseColumn(statement) {
   const next = parseLiteral(statement);
 
-  if (next === null || next.type === "SEPARATOR") return [];
+  if (next === null) return [];
 
   return [next, ...parseColumn(statement)];
 }
