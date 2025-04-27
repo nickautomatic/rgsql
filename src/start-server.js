@@ -28,17 +28,17 @@ function node(type, value) {
 
 function parseLiteral(statement) {
   if (statement.consume(/TRUE/)) {
-    return true;
+    return node("BOOLEAN", true);
   }
 
   if (statement.consume(/FALSE/)) {
-    return false;
+    return node("BOOLEAN", false);
   }
 
   const n = statement.consume(/-?\d+/);
 
   if (n !== null) {
-    return Number(n);
+    return node("INTEGER", Number(n));
   }
 
   return null;
@@ -69,8 +69,7 @@ function run(ast) {
   switch (ast.type) {
     case "SELECT":
       return {
-        rows: [ast.value],
-        column_names: [],
+        rows: [ast.value.map((node) => node.value)],
       };
   }
 }
