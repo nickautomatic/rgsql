@@ -5,18 +5,18 @@ function node(type, value) {
   return { type, value };
 }
 
-function parseLiteral(statement) {
+function* parseLiteral(statement) {
   if (statement.consume(/TRUE/)) {
-    return node("BOOLEAN", true);
+    yield node("BOOLEAN", true);
   }
 
   if (statement.consume(/FALSE/)) {
-    return node("BOOLEAN", false);
+    yield node("BOOLEAN", false);
   }
 
   const n = statement.consume(/-?\d+/);
   if (n !== null) {
-    return node("INTEGER", Number(n));
+    yield node("INTEGER", Number(n));
   }
 
   const alias = statement.consume(/AS [a-zA-Z\d_]+/);
@@ -25,18 +25,12 @@ function parseLiteral(statement) {
     if (value.match(/^\d/)) {
       throw new Error("Column names cannot start with a number");
     }
-    return node("ALIAS", value);
+    yield node("ALIAS", value);
   }
-
-  return null;
 }
 
 function parseColumn(statement) {
-  const next = parseLiteral(statement);
-
-  if (next === null) return [];
-
-  return [next, ...parseColumn(statement)];
+  return [...parseLiteral(statement)];
 }
 
 function parseList(statement) {
@@ -92,6 +86,7 @@ const server = net.createServer((socket) => {
         const ast = parse(new Statement(message));
         // console.log(ast);
         const response = run(ast);
+        // console.log(response);
 
         send({
           status: "ok",
