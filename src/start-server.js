@@ -64,7 +64,10 @@ function run({ type, value }) {
   switch (type) {
     case "SELECT": {
       const rows = [value.map((column) => column.value[0].value)];
-      const column_names = value.map((column) => column.value[1]?.value);
+      const column_names = value.map((column) => {
+        const alias = column.value.find((node) => node.type === "ALIAS");
+        return alias?.value;
+      });
 
       return {
         rows,
