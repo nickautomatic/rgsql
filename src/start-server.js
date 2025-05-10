@@ -21,7 +21,11 @@ function parseLiteral(statement) {
 
   const alias = statement.consume(/AS [a-zA-Z\d_]+/);
   if (alias) {
-    return node("ALIAS", alias.slice(3));
+    const value = alias.slice(3);
+    if (value.match(/^\d/)) {
+      throw new Error("Column names cannot start with a number");
+    }
+    return node("ALIAS", value);
   }
 
   return null;
@@ -31,10 +35,6 @@ function parseColumn(statement) {
   const next = parseLiteral(statement);
 
   if (next === null) return [];
-
-  if (next.type === "ALIAS" && next.value.match(/^\d/)) {
-    throw new Error("Column names cannot start with a number");
-  }
 
   return [next, ...parseColumn(statement)];
 }
