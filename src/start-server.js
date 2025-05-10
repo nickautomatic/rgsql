@@ -30,16 +30,14 @@ function* parseLiteral(statement) {
 }
 
 function parseColumn(statement) {
-  return node("COLUMN", [...parseLiteral(statement)]);
+  const value = [...parseLiteral(statement)];
+  return value.length ? node("COLUMN", value) : null;
 }
 
 function parseList(statement) {
   const column = parseColumn(statement);
-
-  if (column.value.length === 0) return [];
-
   statement.consume(/^,/);
-  return [column, ...parseList(statement)];
+  return column ? [column, ...parseList(statement)] : [];
 }
 
 function parse(statement) {
